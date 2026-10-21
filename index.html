@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Quality Analytics - Statistics & Machine Learning Platform</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind-config.js"></script>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen transition-colors duration-200 antialiased flex flex-col">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white shadow-md shadow-emerald-500/20">
+            <i data-lucide="activity" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-300">
+                AeroStat ML
+              </span>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                v2.4
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Statistics for Machine Learning & Air Quality Diagnostics</p>
+          </div>
+        </div>
+
+        <!-- Tab Links (Desktop) -->
+        <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-sm font-medium">
+          <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn px-3 py-2 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 font-semibold transition">
+            Overview & Data
+          </button>
+          <button onclick="switchTab('descriptive')" id="nav-descriptive" class="nav-btn px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Distributions
+          </button>
+          <button onclick="switchTab('inferential')" id="nav-inferential" class="nav-btn px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Hypothesis Testing
+          </button>
+          <button onclick="switchTab('regression')" id="nav-regression" class="nav-btn px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            OLS Regression
+          </button>
+          <button onclick="switchTab('classification')" id="nav-classification" class="nav-btn px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Classification (AUC)
+          </button>
+          <button onclick="switchTab('simulator')" id="nav-simulator" class="nav-btn px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Live Simulator
+          </button>
+        </nav>
+
+        <!-- Right Quick Controls -->
+        <div class="flex items-center space-x-3">
+          <button onclick="regenerateDataset()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition border border-slate-300 dark:border-slate-700 shadow-sm" title="Re-synthesize simulated observational records">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Resample Data</span>
+          </button>
+
+          <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition" aria-label="Toggle Theme">
+            <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Drawer -->
+      <div class="md:hidden flex overflow-x-auto space-x-2 py-2 border-t border-slate-200 dark:border-slate-800 text-xs custom-scrollbar">
+        <button onclick="switchTab('overview')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold" data-target="overview">Overview</button>
+        <button onclick="switchTab('descriptive')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap text-slate-600 dark:text-slate-300" data-target="descriptive">Distributions</button>
+        <button onclick="switchTab('inferential')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap text-slate-600 dark:text-slate-300" data-target="inferential">Hypothesis Testing</button>
+        <button onclick="switchTab('regression')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap text-slate-600 dark:text-slate-300" data-target="regression">OLS Regression</button>
+        <button onclick="switchTab('classification')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap text-slate-600 dark:text-slate-300" data-target="classification">Classification</button>
+        <button onclick="switchTab('simulator')" class="nav-btn-m px-3 py-1.5 rounded-md whitespace-nowrap text-slate-600 dark:text-slate-300" data-target="simulator">Simulator</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- TAB 1: OVERVIEW & DATASET EXPLORER -->
+    <div id="tab-overview" class="tab-content space-y-6">
+      <!-- Project Mission Banner -->
+      <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+          <i data-lucide="wind" class="w-72 h-72"></i>
+        </div>
+        <div class="max-w-3xl relative z-10 space-y-3">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+            Applied Statistical Learning Framework
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Air Quality Analytics & Pollution Level Inference
+          </h1>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            Bridging fundamental descriptive, inferential, and multivariate statistics with applied machine learning models. Explore atmospheric sensor dynamics, assess Gauss-Markov regression assumptions, test hypothesis significance (<span class="font-mono text-emerald-300">p &lt; 0.05</span>), and evaluate classification boundaries using real-time parameter synthesis.
+          </p>
+          <div class="flex flex-wrap gap-4 pt-2 text-xs text-slate-300">
+            <span class="flex items-center gap-1.5"><i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Sample Size: <strong id="statSampleSize" class="text-white">200</strong> records</span>
+            <span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4 text-teal-400"></i> 10 Multimodal Sensor Variables</span>
+            <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i> Synthetic Gaussian Mixture Model Generation</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Mean PM2.5 (Fine Particulates)</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white flex items-baseline gap-2">
+            <span id="quickMeanPM25">--</span>
+            <span class="text-xs font-normal text-slate-400">µg/m³</span>
+          </div>
+          <div id="quickStatusPM25" class="text-xs mt-1 font-semibold text-emerald-600">--</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Mean Calculated AQI</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white flex items-baseline gap-2">
+            <span id="quickMeanAQI">--</span>
+            <span class="text-xs font-normal text-slate-400">Index</span>
+          </div>
+          <div id="quickStatusAQI" class="text-xs mt-1 font-semibold text-amber-500">Moderate Baseline</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Severe / Unhealthy Days</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white flex items-baseline gap-2">
+            <span id="quickUnhealthyPct">--</span>
+            <span class="text-xs font-normal text-slate-400">%</span>
+          </div>
+          <div class="text-xs mt-1 text-slate-500">AQI &gt; 150 criteria</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Wind - PM2.5 Pearson r</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white flex items-baseline gap-2">
+            <span id="quickCorrWindPM25">--</span>
+            <span class="text-xs font-normal text-slate-400">Inv. Corr</span>
+          </div>
+          <div class="text-xs mt-1 text-indigo-500 font-medium">Dispersion effect</div>
+        </div>
+      </div>
+
+      <!-- Dataset Filter & Table Explorer -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-bold text-slate-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
+              <i data-lucide="table" class="w-5 h-5 text-emerald-500"></i>
+              Observational Dataset Explorer
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Sample observations containing meteorological features and criteria air pollutants.</p>
+          </div>
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="relative flex-1 sm:w-56">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+              <input type="text" id="datasetSearch" oninput="renderDataTable()" placeholder="Filter records..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <select id="seasonFilter" onchange="renderDataTable()" class="text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">All Seasons</option>
+              <option value="Winter">Winter</option>
+              <option value="Spring">Spring</option>
+              <option value="Summer">Summer</option>
+              <option value="Monsoon/Autumn">Monsoon/Autumn</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar max-h-96">
+          <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+            <thead class="bg-slate-100/75 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 uppercase font-semibold sticky top-0 backdrop-blur z-10">
+              <tr>
+                <th class="px-4 py-3">ID</th>
+                <th class="px-4 py-3">Season</th>
+                <th class="px-4 py-3">PM2.5 (µg/m³)</th>
+                <th class="px-4 py-3">PM10 (µg/m³)</th>
+                <th class="px-4 py-3">NO₂ (ppb)</th>
+                <th class="px-4 py-3">SO₂ (ppb)</th>
+                <th class="px-4 py-3">CO (ppm)</th>
+                <th class="px-4 py-3">Temp (°C)</th>
+                <th class="px-4 py-3">Humidity (%)</th>
+                <th class="px-4 py-3">Wind (km/h)</th>
+                <th class="px-4 py-3 font-bold text-slate-900 dark:text-white">AQI</th>
+                <th class="px-4 py-3">Category</th>
+              </tr>
+            </thead>
+            <tbody id="datasetTableBody" class="divide-y divide-slate-200 dark:divide-slate-800 font-mono">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between text-xs text-slate-500">
+          <span id="dataRowCount">Showing 0 rows</span>
+          <span class="text-slate-400">Data synthesized with realistic physical covariance and thermal inversions</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: DESCRIPTIVE STATISTICS & DISTRIBUTIONS -->
+    <div id="tab-descriptive" class="tab-content hidden space-y-6">
+      
+      <!-- Feature Selection & Variable Moments Header -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div>
+          <h2 class="font-bold text-lg text-slate-900 dark:text-white">Descriptive Moments & Distribution Shape</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Measure central tendency, parametric dispersion, asymmetry (Skewness), and tail heaviness (Kurtosis).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="descVarSelect" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Feature:</label>
+          <select id="descVarSelect" onchange="updateDescriptiveTab()" class="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 font-medium focus:ring-2 focus:ring-emerald-500">
+            <option value="pm25">PM2.5 Concentration</option>
+            <option value="pm10">PM10 Concentration</option>
+            <option value="no2">Nitrogen Dioxide (NO₂)</option>
+            <option value="so2">Sulfur Dioxide (SO₂)</option>
+            <option value="co">Carbon Monoxide (CO)</option>
+            <option value="temp">Temperature</option>
+            <option value="humidity">Relative Humidity</option>
+            <option value="wind">Wind Speed</option>
+            <option value="aqi" selected>Air Quality Index (AQI)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Statistical Moment Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="momentsGrid">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Distribution Charts: Histogram + Q-Q Plot -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Histogram & Density -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-500"></i>
+                Empirical Distribution & Bin Density
+              </h3>
+              <p class="text-xs text-slate-500">Histogram with Gaussian normal curve overlay</p>
+            </div>
+            <span id="normalityVerdictBadge" class="text-xs px-2.5 py-0.5 rounded-full font-semibold"></span>
+          </div>
+          <div class="h-64 sm:h-72 w-full">
+            <canvas id="histogramChart"></canvas>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 leading-relaxed">
+            <strong class="text-slate-700 dark:text-slate-300">Statistical Takeaway:</strong> Skewed pollutants like PM2.5 frequently violate normality assumptions in classical OLS models, prompting logarithmic <span class="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">log(1+x)</span> or Box-Cox transformations.
+          </div>
+        </div>
+
+        <!-- Normal Q-Q Plot -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="line-chart" class="w-4 h-4 text-indigo-500"></i>
+                Quantile-Quantile (Q-Q) Plot
+              </h3>
+              <p class="text-xs text-slate-500">Comparison against theoretical standard normal quantiles</p>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">z ~ N(0, 1)</span>
+          </div>
+          <div class="h-64 sm:h-72 w-full">
+            <canvas id="qqPlotChart"></canvas>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 leading-relaxed">
+            <strong class="text-slate-700 dark:text-slate-300">Q-Q Diagnostics:</strong> Heavy upward curvature in the right quantiles highlights right-skewness (fat tails), demonstrating risk of outlier leverage in ML loss functions (MSE).
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Correlation Matrix Heatmap -->
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="grid" class="w-5 h-5 text-teal-500"></i>
+              Multivariate Pearson Correlation Matrix (r)
+            </h3>
+            <p class="text-xs text-slate-500">Pairwise linear correlation coefficients between -1.0 (pure inverse) and +1.0 (pure direct).</p>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+            Multicollinearity Warning Threshold: |r| &gt; 0.70
+          </span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <div id="correlationHeatmapContainer" class="min-w-[600px] py-2">
+            <!-- Rendered by JS as dynamic grid -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: INFERENTIAL STATISTICS & HYPOTHESIS TESTING -->
+    <div id="tab-inferential" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white">Inferential Hypothesis Testing</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Evaluate whether observed atmospheric differences represent statistically significant phenomena or random sampling variance.</p>
+      </div>
+
+      <!-- Tests Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- TEST 1: Two-Sample Independent Student's t-test -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs uppercase tracking-wider font-bold text-emerald-600 dark:text-emerald-400">Parametric Test 1</span>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white mt-0.5">Two-Sample Independent Welch's t-test</h3>
+                <p class="text-xs text-slate-500">PM2.5 Concentrations: Winter vs. Summer Seasonal Inversion</p>
+              </div>
+              <span class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                <i data-lucide="git-commit" class="w-5 h-5"></i>
+              </span>
+            </div>
+
+            <!-- Hypotheses statements -->
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 font-mono">
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₀ (Null):</strong> μ_winter = μ_summer (Equal mean PM2.5 levels)</div>
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₁ (Alt):</strong> μ_winter &gt; μ_summer (Winter pollution is significantly higher)</div>
+              <div class="text-slate-500 text-[11px]">Significance Level α = 0.05</div>
+            </div>
+
+            <!-- Computation Results -->
+            <div id="tTestResultsBox" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+            <strong>ML Implication:</strong> High statistical difference justifies including <em>Season</em> as an encoded categorical feature or interaction term.
+          </div>
+        </div>
+
+        <!-- TEST 2: One-Way ANOVA (F-Test) -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400">Parametric Test 2</span>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white mt-0.5">One-Way ANOVA (Analysis of Variance)</h3>
+                <p class="text-xs text-slate-500">AQI Variation across All Four Seasons (Winter, Spring, Summer, Autumn)</p>
+              </div>
+              <span class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+              </span>
+            </div>
+
+            <!-- Hypotheses statements -->
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 font-mono">
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₀:</strong> μ₁ = μ₂ = μ₃ = μ₄ (All seasonal mean AQIs are equivalent)</div>
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₁:</strong> At least one season differs significantly in mean AQI</div>
+              <div class="text-slate-500 text-[11px]">Metric: F-Ratio = (Between-Group Var) / (Within-Group Var)</div>
+            </div>
+
+            <!-- Computation Results -->
+            <div id="anovaResultsBox" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+            <strong>ML Implication:</strong> High F-statistic confirms high between-group variance; seasonal dummy variables provide genuine signal without overfitting.
+          </div>
+        </div>
+
+        <!-- TEST 3: Chi-Square Test of Independence -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs uppercase tracking-wider font-bold text-amber-600 dark:text-amber-400">Non-Parametric Test</span>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white mt-0.5">Chi-Square (χ²) Test of Independence</h3>
+                <p class="text-xs text-slate-500">Contingency: Wind Speed Tier (&lt;12 km/h vs &gt;12 km/h) vs Hazardous AQI Status</p>
+              </div>
+              <span class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400">
+                <i data-lucide="shuffle" class="w-5 h-5"></i>
+              </span>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 font-mono">
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₀:</strong> Wind speed tier and Hazard status are independent</div>
+              <div class="text-slate-700 dark:text-slate-300"><strong>H₁:</strong> Significant association between calm wind conditions and hazard events</div>
+            </div>
+
+            <div id="chiSquareResultsBox" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+            <strong>ML Implication:</strong> Significant categorical dependency proves non-linear threshold interaction; crucial for decision trees and random forests.
+          </div>
+        </div>
+
+        <!-- TEST 4: Pearson vs Spearman Non-Linear Correlation -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-xs uppercase tracking-wider font-bold text-teal-600 dark:text-teal-400">Correlation Diagnostics</span>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white mt-0.5">Pearson Linear (r) vs Spearman Monotonic (ρ)</h3>
+                <p class="text-xs text-slate-500">PM2.5 vs Air Quality Index (AQI)</p>
+              </div>
+              <span class="p-2 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+              </span>
+            </div>
+
+            <div id="correlationCompBox" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+            <strong>ML Implication:</strong> When Spearman exceeds Pearson, non-linear monotonic relationships exist. Tree-based models or power transforms outperform raw linear models.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: ML MULTIPLE LINEAR REGRESSION (OLS) -->
+    <div id="tab-regression" class="tab-content hidden space-y-6">
+      
+      <!-- Regression Config Header -->
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="binary" class="w-5 h-5 text-emerald-500"></i>
+            Multiple Ordinary Least Squares (OLS) Linear Regression
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Target Variable <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">Y = AQI</span>. Solved numerically via Normal Equation: <span class="font-mono">β = (XᵀX)⁻¹ Xᵀy</span>.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-slate-500">Predictors:</span>
+          <label class="inline-flex items-center text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md cursor-pointer">
+            <input type="checkbox" id="regFeat_pm25" checked onchange="runRegressionModel()" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5"> PM2.5
+          </label>
+          <label class="inline-flex items-center text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md cursor-pointer">
+            <input type="checkbox" id="regFeat_pm10" checked onchange="runRegressionModel()" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5"> PM10
+          </label>
+          <label class="inline-flex items-center text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md cursor-pointer">
+            <input type="checkbox" id="regFeat_no2" checked onchange="runRegressionModel()" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5"> NO₂
+          </label>
+          <label class="inline-flex items-center text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md cursor-pointer">
+            <input type="checkbox" id="regFeat_wind" checked onchange="runRegressionModel()" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5"> Wind
+          </label>
+          <label class="inline-flex items-center text-xs bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md cursor-pointer">
+            <input type="checkbox" id="regFeat_temp" onchange="runRegressionModel()" class="rounded text-emerald-600 focus:ring-emerald-500 mr-1.5"> Temp
+          </label>
+        </div>
+      </div>
+
+      <!-- Goodness of Fit Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Coefficient of Determination (R²)</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="regR2">--</div>
+          <div class="text-xs mt-1 text-emerald-600 font-medium">% variance explained</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Adjusted R²</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="regAdjR2">--</div>
+          <div class="text-xs mt-1 text-slate-500">Penalizes redundant terms</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Root Mean Squared Error (RMSE)</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="regRMSE">--</div>
+          <div class="text-xs mt-1 text-slate-500">Standard deviation of errors</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Mean Absolute Error (MAE)</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="regMAE">--</div>
+          <div class="text-xs mt-1 text-slate-500">L1 average absolute dev</div>
+        </div>
+      </div>
+
+      <!-- Coefficients Table with t-stats and VIF -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+          <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-emerald-500"></i>
+            Parameter Estimates (β), Standard Errors, t-Statistics & VIF
+          </h3>
+          <p class="text-xs text-slate-500">Variance Inflation Factor (VIF &gt; 5 indicates severe multicollinearity that inflates coefficient variance).</p>
+        </div>
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase font-semibold">
+              <tr>
+                <th class="px-4 py-3">Feature</th>
+                <th class="px-4 py-3">Coefficient (β)</th>
+                <th class="px-4 py-3">Std. Error (SE)</th>
+                <th class="px-4 py-3">t-Statistic</th>
+                <th class="px-4 py-3">p-Value</th>
+                <th class="px-4 py-3">VIF (Multicollinearity)</th>
+                <th class="px-4 py-3">Significance</th>
+              </tr>
+            </thead>
+            <tbody id="regressionCoeffsTable" class="divide-y divide-slate-200 dark:divide-slate-800 font-mono">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gauss-Markov Diagnostic Plots: Residuals vs Fitted & Residual Histogram -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Residuals vs Fitted -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="scatter-chart" class="w-4 h-4 text-blue-500"></i>
+                Residuals vs. Fitted Values
+              </h3>
+              <p class="text-xs text-slate-500">Diagnostic for Homoscedasticity & Linearity</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded font-mono bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              Assumes ε ~ i.i.d. N(0, σ²)
+            </span>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="residualsFittedChart"></canvas>
+          </div>
+          <p class="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <strong>Gauss-Markov Check:</strong> A random cloud without funneling confirms homoscedasticity. Any funnel indicates heteroscedasticity requiring weighted least squares (WLS) or robust errors.
+          </p>
+        </div>
+
+        <!-- Histogram of Residuals -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="git-pull-request" class="w-4 h-4 text-purple-500"></i>
+                Distribution of Residuals (Errors)
+              </h3>
+              <p class="text-xs text-slate-500">Testing Gaussian Error Assumption</p>
+            </div>
+            <span class="text-xs px-2 py-0.5 rounded font-mono bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+              Mean Residual ≈ 0
+            </span>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="residualsHistChart"></canvas>
+          </div>
+          <p class="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <strong>Normality Check:</strong> Bell-shaped residuals validate standard error computations, student's t-test p-values, and hypothesis intervals.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 5: ML CLASSIFICATION & ROC/AUC -->
+    <div id="tab-classification" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-emerald-500"></i>
+            Logistic Classifier & Discriminant Evaluation
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Binary Classification Task: <span class="font-semibold text-rose-500">Hazardous (AQI &gt; 150)</span> vs <span class="font-semibold text-emerald-600">Acceptable (AQI ≤ 150)</span>.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label for="classifierThreshold" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Decision Threshold (τ):</label>
+          <div class="flex items-center gap-2">
+            <input type="range" id="classifierThreshold" min="0.10" max="0.90" step="0.05" value="0.50" oninput="updateClassificationMetrics()" class="w-28 sm:w-36 accent-emerald-500">
+            <span id="thresholdValDisplay" class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-1 rounded">0.50</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Classification Performance Metric Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Accuracy</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="clfAccuracy">--</div>
+          <div class="text-[11px] text-slate-400">(TP + TN) / Total</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Precision (PPV)</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="clfPrecision">--</div>
+          <div class="text-[11px] text-slate-400">TP / (TP + FP)</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">Recall / Sensitivity</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="clfRecall">--</div>
+          <div class="text-[11px] text-slate-400">TP / (TP + FN)</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div class="text-xs text-slate-500 font-medium">F1-Score</div>
+          <div class="text-2xl font-bold mt-1 text-slate-900 dark:text-white" id="clfF1">--</div>
+          <div class="text-[11px] text-slate-400">Harmonic Mean (P, R)</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm col-span-2 sm:col-span-1">
+          <div class="text-xs text-slate-500 font-medium">AUC-ROC</div>
+          <div class="text-2xl font-bold mt-1 text-indigo-600 dark:text-indigo-400" id="clfAUC">--</div>
+          <div class="text-[11px] text-slate-400">Discriminative power</div>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix & ROC Curve -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Confusion Matrix Visualizer -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-500"></i>
+                  Confusion Matrix 2x2
+                </h3>
+                <p class="text-xs text-slate-500">Observed ground truth vs Model classification</p>
+              </div>
+              <span class="text-xs font-mono text-slate-400">N = <span id="confMatTotal">200</span></span>
+            </div>
+
+            <!-- 2x2 Matrix Graphic -->
+            <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              
+              <!-- True Negative -->
+              <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">True Negative (TN)</span>
+                <span class="text-2xl font-black text-emerald-900 dark:text-emerald-100 my-1 font-mono" id="cmTN">0</span>
+                <span class="text-[11px] text-slate-500">Actual: Clean | Pred: Clean</span>
+              </div>
+
+              <!-- False Positive -->
+              <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-semibold text-rose-700 dark:text-rose-300">False Positive (Type I)</span>
+                <span class="text-2xl font-black text-rose-900 dark:text-rose-100 my-1 font-mono" id="cmFP">0</span>
+                <span class="text-[11px] text-slate-500">Actual: Clean | Pred: Hazard</span>
+              </div>
+
+              <!-- False Negative -->
+              <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-semibold text-amber-700 dark:text-amber-300">False Negative (Type II)</span>
+                <span class="text-2xl font-black text-amber-900 dark:text-amber-100 my-1 font-mono" id="cmFN">0</span>
+                <span class="text-[11px] text-slate-500">Actual: Hazard | Pred: Clean</span>
+              </div>
+
+              <!-- True Positive -->
+              <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">True Positive (TP)</span>
+                <span class="text-2xl font-black text-emerald-900 dark:text-emerald-100 my-1 font-mono" id="cmTP">0</span>
+                <span class="text-[11px] text-slate-500">Actual: Hazard | Pred: Hazard</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <strong>Critical Health Perspective:</strong> Type II errors (False Negatives: failing to warn citizens of hazardous air) are significantly more detrimental than Type I errors, advocating for a lower decision threshold (e.g. τ = 0.35).
+          </p>
+        </div>
+
+        <!-- Receiver Operating Characteristic (ROC) Curve -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <i data-lucide="chart-pie" class="w-4 h-4 text-indigo-500"></i>
+                Receiver Operating Characteristic (ROC) Curve
+              </h3>
+              <p class="text-xs text-slate-500">True Positive Rate (Sensitivity) vs False Positive Rate (1 - Specificity)</p>
+            </div>
+            <span class="text-xs font-semibold text-indigo-500">AUC: <span id="rocCurveAUC">0.92</span></span>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="rocChart"></canvas>
+          </div>
+          <p class="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <strong>Interpretation:</strong> The diagonal dashed line denotes a random coin toss (AUC = 0.50). An AUC &gt; 0.90 demonstrates exceptional classification power across varying thresholds.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAB 6: LIVE PREDICTOR & SCENARIO SIMULATOR -->
+    <div id="tab-simulator" class="tab-content hidden space-y-6">
+      
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <h2 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="sliders-horizontal" class="w-5 h-5 text-emerald-500"></i>
+          Atmospheric Scenario Simulator & Inference Engine
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Manipulate real-time meteorological conditions and precursor gas emissions to simulate model predictions and health risk indices.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Controls Column (Sliders) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Sensor Parameter Inputs</h3>
+            <button onclick="resetSimulatorDefaults()" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium">Reset to Baseline</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- PM2.5 -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">PM2.5 (Fine Particles)</span>
+                <span id="val_sim_pm25" class="font-mono text-emerald-600 font-bold">45 µg/m³</span>
+              </div>
+              <input type="range" id="sim_pm25" min="5" max="250" value="45" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>5 (Clean)</span><span>250 (Severe)</span></div>
+            </div>
+
+            <!-- PM10 -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">PM10 (Coarse Particles)</span>
+                <span id="val_sim_pm10" class="font-mono text-emerald-600 font-bold">80 µg/m³</span>
+              </div>
+              <input type="range" id="sim_pm10" min="10" max="350" value="80" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>10 (Low)</span><span>350 (Heavy Dust)</span></div>
+            </div>
+
+            <!-- NO2 -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">NO₂ (Nitrogen Dioxide)</span>
+                <span id="val_sim_no2" class="font-mono text-emerald-600 font-bold">35 ppb</span>
+              </div>
+              <input type="range" id="sim_no2" min="5" max="120" value="35" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>5 (Rural)</span><span>120 (Traffic Peak)</span></div>
+            </div>
+
+            <!-- Wind Speed -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">Wind Speed</span>
+                <span id="val_sim_wind" class="font-mono text-emerald-600 font-bold">14 km/h</span>
+              </div>
+              <input type="range" id="sim_wind" min="1" max="45" value="14" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>1 (Stagnant Inversion)</span><span>45 (High Dispersion)</span></div>
+            </div>
+
+            <!-- Temperature -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">Ambient Temperature</span>
+                <span id="val_sim_temp" class="font-mono text-emerald-600 font-bold">24 °C</span>
+              </div>
+              <input type="range" id="sim_temp" min="2" max="46" value="24" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>2°C (Winter Cold)</span><span>46°C (Summer Heat)</span></div>
+            </div>
+
+            <!-- Humidity -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">Relative Humidity</span>
+                <span id="val_sim_hum" class="font-mono text-emerald-600 font-bold">55 %</span>
+              </div>
+              <input type="range" id="sim_hum" min="15" max="98" value="55" oninput="runLivePrediction()" class="w-full accent-emerald-500">
+              <div class="flex justify-between text-[10px] text-slate-400"><span>15% (Arid)</span><span>98% (Dense Fog/Smog)</span></div>
+            </div>
+          </div>
+
+          <!-- Scenario Presets -->
+          <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Simulate Real Atmospheric Archetypes:</span>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="applyPreset('cleanCoastal')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                🌊 Clean Coastal Breeze
+              </button>
+              <button onclick="applyPreset('winterInversion')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                🌫️ Winter Fog & Thermal Inversion
+              </button>
+              <button onclick="applyPreset('rushHour')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                🚗 Rush-Hour Urban Gridlock
+              </button>
+              <button onclick="applyPreset('dustStorm')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                🏜️ Arid Dust Storm
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output Prediction Column -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-6">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Inference Output</span>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white mt-1">Predicted Pollution Severity</h3>
+            
+            <!-- Gauge / Meter Card -->
+            <div class="mt-5 p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden">
+              <div id="simCategoryBg" class="absolute inset-0 opacity-10"></div>
+              
+              <div class="text-xs uppercase font-bold text-slate-500 tracking-wide">Predicted Air Quality Index</div>
+              <div class="text-5xl font-black my-2 font-mono" id="simPredictedAQI">--</div>
+              
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold" id="simCategoryBadge">
+                Moderate
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 flex justify-between">
+                <span>95% Confidence Interval:</span>
+                <span class="font-mono font-semibold text-slate-700 dark:text-slate-300" id="simCI">[-- , --]</span>
+              </div>
+            </div>
+
+            <!-- Health Advisory -->
+            <div class="mt-5 space-y-2">
+              <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Public Health Advisory:</span>
+              <p class="text-xs text-slate-500 leading-relaxed" id="simHealthAdvisory">
+                Air quality is acceptable. However, unusually sensitive individuals should consider limiting prolonged outdoor exertion.
+              </p>
+            </div>
+          </div>
+
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900/60 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+            <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+            <span>Simulation executes vector dot product across active OLS regression coefficients with variance uncertainty modeling.</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-500 py-6 mt-12 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div>
+        <p class="font-medium text-slate-700 dark:text-slate-300">AeroStat ML Platform &bull; Statistics for Data Science Project</p>
+        <p class="text-slate-400 mt-0.5">Empirical Atmospheric Modeling with OLS Gauss-Markov & Hypothesis Testing</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> Ready for Analysis
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>
